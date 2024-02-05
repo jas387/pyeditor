@@ -1,2 +1,9 @@
-# pyeditor
-android python text editor focus in keyboard
+# A src Flet app
+
+An example of a minimal Flet app.
+
+To run the app:
+
+```
+flet run [app_directory]
+```
