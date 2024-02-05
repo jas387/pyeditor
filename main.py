@@ -13,6 +13,7 @@ class App:
     # flet
     def _flet_start(self, page: flet.Page, *w, **kw):
         self.page = page
+        self.page.on_keyboard_event = self.on_keyboard
         page.title = 'pyeditor'
         page.horizontal_alignment = flet.CrossAxisAlignment.CENTER
         page.vertical_alignment = flet.MainAxisAlignment.START
@@ -21,23 +22,102 @@ class App:
             page.window_max_height = self._window_height
         self._home()
         page.update()
+    def on_keyboard(self, event: flet.KeyboardEvent):
+        key = event.key # A, Enter
+        shift=event.shift
+        ctrl=event.ctrl
+        alt=event.alt 
+        meta=event.meta # 'windows' button
+        # menu -> file shortcuts
+        if ctrl:
+            match (key):
+                case 'N':
+                    self.menu_file_on_new()
+                case 'W':
+                    self.menu_file_on_close()
+    
+    def menu_file_on_new(self, *w, title: str = None, **kw):
 
+        tab_count = len(self.tabs.current.tabs)
+        tab_index = self.tabs.current.selected_index
+        print('create_tab:',tab_count,tab_index)
+        text_input=flet.TextField(multiline=True, min_lines=20,keyboard_type=flet.KeyboardType.MULTILINE,autofocus=True)
+        self.tabs.current.tabs.insert(tab_index+1, flet.Tab(text=f'untitled {tab_count}' if title is None else title,content=text_input))
+        self.tabs.current.selected_index=tab_index+1 if tab_index!=tab_count else tab_index
+        self.tabs.current.update()
+        text_input.focus()
+        
+
+
+        
+    def menu_file_on_close(self, *w, **kw):
+        tabs=len(self.tabs.current.tabs)
+        if tabs<=0:
+            return
+        index=self.tabs.current.selected_index
+        if index-1>=0:
+            self.tabs.current.selected_index = index-1
+        self.tabs.current.tabs.pop(index)
+        self.tabs.current.update()
+    
     def _home(self):
+        def on_file_open(e):
+            pass
+        def on_file_save(e):
+            pass
+        def on_file_save_as(e):
+            pass
+        
+
+        # menu File
+        menu_file = Menu(text='File', icon=flet.icons.FILE_PRESENT)
+        menu_file.add_button('New',flet.icons.CREATE,self.menu_file_on_new)
+        menu_file.add_button('Open',flet.icons.CREATE,on_file_open)
+        menu_file.add_button('Save',flet.icons.CREATE,on_file_save)
+        menu_file.add_button('Save as',flet.icons.CREATE,on_file_save_as)
+        menu_file.add_button('Close',flet.icons.CREATE,self.menu_file_on_close)
+        # menu Edit
+        menu_edit = Menu(text='Edit', icon=flet.icons.EDIT)
+        menu_edit.add_button('Copy',flet.icons.COPY)
+        menu_edit.add_button('Cut',flet.icons.CUT)
+        menu_edit.add_button('Paste',flet.icons.PASTE)
+        menu_edit.add_button('Find',flet.icons.FIND_IN_PAGE)
+        menu_edit.add_button('Replace',flet.icons.FIND_REPLACE)
+        # view
+        menu_view = Menu(text='View', icon=flet.icons.PAGEVIEW)
+        menu_view.add_button('Zoom in',flet.icons.ZOOM_IN)
+        menu_view.add_button('Zoom out',flet.icons.ZOOM_OUT)
+        menu_view.add_button('Wrod wrap',flet.icons.WRAP_TEXT)
+        menu_view.add_button('Line number',flet.icons.NUMBERS)
+        menu_view.add_button('Go to',flet.icons.REMOVE_RED_EYE)
+        # preferences
+        menu_preferences = Menu(text='Preferences', icon=flet.icons.ROOM_PREFERENCES)
+        menu_preferences.add_button('Settings',flet.icons.SETTINGS)
+        menu_preferences.add_button('Shortcuts',flet.icons.SHORTCUT)
+        menu_preferences.add_button('Themes',flet.icons.COLOR_LENS)
+        menu_preferences.add_button('Syntax highlight',flet.icons.HIGHLIGHT)
+        menu_preferences.add_button('Fonts',flet.icons.FONT_DOWNLOAD)
+        menu_preferences.add_button('Pluggins',flet.icons.POWER)
+
+        # bar
         menu_bar = flet.MenuBar(expand=0,style=flet.MenuStyle(alignment=flet.alignment.top_left),
             controls=[
-
-                FileSubMenu(),
-                EditSubMenu(),
-                ViewSubMenu(),
-                PreferencesSubMenu(),
+                #menu_file, menu_edit, menu_view, menu_preference
+                menu_file, menu_edit, menu_view, menu_preferences
 
             ])
         
-        self.page.controls.append(menu_bar)
-        text_view = flet.TextField(multiline=True, expand=True, border=flet.InputBorder.NONE, keyboard_type=flet.KeyboardType.MULTILINE, autofocus=True)
-        status_bar = flet.Text('testing', bgcolor='lightgrey',expand=1)
 
-        self.page.controls.append(text_view)
+
+        self.page.controls.append(menu_bar)
+        self.tabs = flet.Ref[flet.Tabs]()
+
+
+
+        self.page.controls.append(flet.Tabs(ref=self.tabs,scrollable=True))
+        self.page.update()
+        self.menu_file_on_new() # empyt inital file
+        
     # pluggin callback    
     def __init(self, *w, **kw):
         for plug in self.pluggins:
@@ -51,60 +131,26 @@ class App:
         for plug in self.pluggins:
             plug.close()
         
-
-class FileSubMenu(flet.SubmenuButton):
-    def __init__(self, *w, **kw):
+class Menu(flet.SubmenuButton):
+    def __init__(self, text: str, *w, icon=None, **kw):
         super().__init__()
-        self.content = flet.Text('File')
-        self.leading=flet.Icon(flet.icons.FILE_PRESENT)
-        self.controls = [
-            flet.MenuItemButton(content=flet.Text('Open'), leading=flet.Icon(flet.icons.FILE_OPEN)),
-            flet.MenuItemButton(content=flet.Text('Save'), leading=flet.Icon(flet.icons.SAVE)),
-            flet.MenuItemButton(content=flet.Text('Save as'), leading=flet.Icon(flet.icons.SAVE_AS)),
-            flet.MenuItemButton(content=flet.Text('Close'), leading=flet.Icon(flet.icons.CLOSE)),
-            ]
+        self.content = flet.Text(text)
+        self.leading=flet.Icon(icon) or None
+        self.buttons = {} # name: (ref,icon,callback)
 
-class EditSubMenu(flet.SubmenuButton):
-    def __init__(self, *w, **kw):
-        super().__init__()
-        self.content = flet.Text('Edit')
-        self.leading = flet.Icon(flet.icons.EDIT)
-        self.controls = [
-            flet.MenuItemButton(content=flet.Text('Copy'), leading=flet.Icon(flet.icons.COPY)),
-            flet.MenuItemButton(content=flet.Text('Cut'), leading=flet.Icon(flet.icons.CUT)),
-            flet.MenuItemButton(content=flet.Text('Paste'), leading=flet.Icon(flet.icons.PASTE)),
-            flet.MenuItemButton(content=flet.Text('Find'), leading=flet.Icon(flet.icons.FIND_IN_PAGE)),
-            flet.MenuItemButton(content=flet.Text('Replace'), leading=flet.Icon(flet.icons.FIND_REPLACE)),
-            ]
-
-class ViewSubMenu(flet.SubmenuButton):
-    def __init__(self, *w, **kw):
-        super().__init__()
-        self.content = flet.Text('View')
-        self.leading = flet.Icon(flet.icons.PAGEVIEW)
-        self.controls = [
-            flet.MenuItemButton(content=flet.Text('Zoom in'), leading=flet.Icon(flet.icons.ZOOM_IN)),
-            flet.MenuItemButton(content=flet.Text('Zoom out'), leading=flet.Icon(flet.icons.ZOOM_OUT)),
-            flet.MenuItemButton(content=flet.Text('Word wrap'), leading=flet.Icon(flet.icons.WRAP_TEXT)),
-            flet.MenuItemButton(content=flet.Text('Line number'), leading=flet.Icon(flet.icons.NUMBERS)),
-            flet.MenuItemButton(content=flet.Text('Go to'), leading=flet.Icon(flet.icons.REMOVE_RED_EYE)),
-            ]
-
-class PreferencesSubMenu(flet.SubmenuButton):
-    def __init__(self, *w, **kw):
-        super().__init__()
-        self.content = flet.Text('Preferences')
-        self.leading = flet.Icon(flet.icons.ROOM_PREFERENCES)
-        self.controls = [
-            flet.MenuItemButton(content=flet.Text('Settings'), leading=flet.Icon(flet.icons.SETTINGS)),
-            flet.MenuItemButton(content=flet.Text('Shortcuts'), leading=flet.Icon(flet.icons.SHORTCUT)),
-            flet.MenuItemButton(content=flet.Text('Themes'), leading=flet.Icon(flet.icons.COLOR_LENS)),
-            flet.MenuItemButton(content=flet.Text('Syntax Highlight'), leading=flet.Icon(flet.icons.HIGHLIGHT)),
-            flet.MenuItemButton(content=flet.Text('Fonts'), leading=flet.Icon(flet.icons.FONT_DOWNLOAD)),
-            flet.MenuItemButton(content=flet.Text('Pluggins'), leading=flet.Icon(flet.icons.POWER)),
-            ]
+    def add_button(self, text:str, icon,on_click: callable=None):
+        bt = flet.Ref[flet.MenuItemButton]()
+        self.buttons[text]=(bt, icon, on_click)
+        self.controls.append(flet.MenuItemButton(ref=bt, content=flet.Text(text), leading=flet.Icon(icon),on_click=on_click))
+        
 
 
+    def del_button(self, name: str):
+        if hasattr(self.buttons, name):
+            del self.buttons[name]
+
+
+   
 if __name__=='__main__':
     app = App()
     flet.app(app._flet_start)
