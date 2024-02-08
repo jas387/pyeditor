@@ -33,6 +33,17 @@ class App:
 		self._page.controls.append(self._editor)
 		Shortcut.register('N', callback=Callback(self._editor.new_tab))
 		Shortcut.register('W', callback=Callback(self._editor.del_tab))
+		Shortcut.register('Arrow Right', ctrl=False,alt=True,callback=Callback(self._editor.next_tab))
+		Shortcut.register('Arrow Left', ctrl=False,alt=True,callback=Callback(self._editor.prev_tab))
+		Shortcut.register('Arrow Up', ctrl=False,alt=True,callback=Callback(self._editor.go_first_tab)) #first
+		Shortcut.register('Arrow Down', ctrl=False,alt=True,callback=Callback(self._editor.go_last_tab)) #last
+
+		for digit in range(1,11):
+			if digit==10:
+				digit =0
+			Shortcut.register(str(digit),ctrl=False, alt=True,callback=Callback(self._editor.go_tab, index=digit-1 if digit!=0 else 9))
+
+
 
 		# status bar
 		self._status_bar = flet.Row([flet.Container(content=flet.Text('status bar:', expand=True),expand=True, bgcolor='grey')])
@@ -141,7 +152,20 @@ class Editor(flet.UserControl):
 		self._tabs.selected_index = index - 1 if index != 0 else index
 		self._tabs.tabs.pop(index)
 		self.update()
-		
+	
+	def next_tab(self):
+		index = self._tabs.selected_index
+		self.go_tab(index+1)
+	def prev_tab(self):
+		index = self._tabs.selected_index
+		self.go_tab(index-1)
+	def go_tab(self, index: int=0):
+		self._tabs.selected_index = index
+		self._tabs.update()
+	def go_first_tab(self):
+		self.go_tab(0)
+	def go_last_tab(self):
+		self.go_tab(len(self._tabs.tabs)-1)
 	def will_unmount(self):
 		pass
 
