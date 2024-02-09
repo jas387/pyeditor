@@ -24,6 +24,8 @@ class App:
 		if not self._page.platform=='android':
 			self._page.window_max_width = self._width
 			self._page.window_max_height = self._height
+		else:
+			self._page.window_full_screen = True
 
 		# top menu
 		menu_file = MenuFile()
