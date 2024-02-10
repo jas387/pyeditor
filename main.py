@@ -29,34 +29,90 @@ class App:
 
 		# top menu
 		menu_file = MenuFile()
+		menu_edit = MenuEdit()
+		menu_view = MenuView()
+		menu_preference = MenuPreference()
 
-		menus = [menu_file,MenuEdit(),MenuView(),MenuPreference()]
+		menus = [menu_file,menu_edit,menu_view,menu_preference]
 		self._top_menu = flet.MenuBar(expand=False,controls=menus)
 		self._page.controls.append(flet.Row([self._top_menu],alignment=flet.MainAxisAlignment.CENTER))
 		# tabs
 		self._editor = Editor()
 		self._page.controls.append(self._editor)
-		# menu callbacks
-		menu_file._on_new.bind(Callback(self._editor.new_tab))
-		menu_file._on_open.bind(Callback(self._editor.file_open))
-		menu_file._on_save.bind(Callback(self._editor.file_save))
-		menu_file._on_save_as.bind(Callback(self._editor.file_save_as))
-		menu_file._on_close.bind(Callback(self._editor.del_tab))
+		
+		# Menu Callbacks (action events)
+		on_file_new = Callback(self._editor.new_tab)
+		on_file_open = Callback(self._editor.file_open)
+		on_file_save = Callback(self._editor.file_save)
+		on_file_save_as = Callback(self._editor.file_save_as)
+		on_file_close = Callback(self._editor.del_tab)
+
+		on_edit_copy = Callback(self._editor.edit_copy)
+		on_edit_cut = Callback(self._editor.edit_cut)
+		on_edit_paste = Callback(self._editor.edit_paste)
+		on_edit_find = Callback(self._editor.edit_find)
+		on_edit_replace = Callback(self._editor.edit_replace)
+
+		on_view_zoom_in = Callback(self._editor.view_zoom_in)
+		on_view_zoom_out = Callback(self._editor.view_zoom_out)
+		on_view_zoom_reset = Callback(self._editor.view_zoom_reset)
+
+		on_view_word_wrap = Callback(self._editor.view_word_wrap)
+		on_view_line_number = Callback(self._editor.view_line_number)
+		on_view_go_to = Callback(self._editor.view_go_to)
+		
+		on_preference_setting = Callback(self._editor.preference_setting)
+		on_preference_shortcut = Callback(self._editor.preference_shortcut)
+		on_preference_theme = Callback(self._editor.preference_theme)
+		on_preference_syntax_highlight = Callback(self._editor.preference_syntax_highlight)
+		on_preference_font = Callback(self._editor.preference_font)
+		on_preference_pluggin = Callback(self._editor.preference_pluggin)
+
+		# menu set on_click button event
+		menu_file._on_new.bind(on_file_new)
+		menu_file._on_open.bind(on_file_open)
+		menu_file._on_save.bind(on_file_save)
+		menu_file._on_save_as.bind(on_file_save_as)
+		menu_file._on_close.bind(on_file_close)
+
+		menu_edit._on_copy.bind(on_edit_copy)
+		menu_edit._on_cut.bind(on_edit_cut)
+		menu_edit._on_paste.bind(on_edit_paste)
+		menu_edit._on_find.bind(on_edit_find)
+		menu_edit._on_replace.bind(on_edit_replace)
+
+		menu_view._on_zoom_in.bind(on_view_zoom_in)
+		menu_view._on_zoom_out.bind(on_view_zoom_out)
+		menu_view._on_zoom_reset.bind(on_view_zoom_reset)
+		menu_view._on_word_wrap.bind(on_view_word_wrap)
+		menu_view._on_line_number.bind(on_view_line_number)
+		menu_view._on_go_to.bind(on_view_go_to)
+
+		menu_preference._on_settings.bind(on_preference_setting)
+		menu_preference._on_shortcuts.bind(on_preference_shortcut)
+		menu_preference._on_themes.bind(on_preference_theme)
+		menu_preference._on_syntax_hightlight.bind(on_preference_syntax_highlight)
+		menu_preference._on_fonts.bind(on_preference_font)
+		menu_preference._on_pluggins.bind(on_preference_pluggin)
 
 		# keyboard shortcuts
-		Shortcut.register('N', callback=Callback(self._editor.new_tab))
-		Shortcut.register('O', callback=Callback(self._editor.file_open))
-		Shortcut.register('S', ctrl=True, shift=False, callback=Callback(self._editor.file_save))
-		Shortcut.register('S', ctrl=True, shift=True, callback=Callback(self._editor.file_save_as))
+		## File Menu
+		Shortcut.register('N', callback=on_file_new)
+		Shortcut.register('O', callback=on_file_open)
+		Shortcut.register('S', ctrl=True, shift=False, callback=on_file_save)
+		Shortcut.register('S', ctrl=True, shift=True, callback=on_file_save_as)
+		Shortcut.register('W', callback=on_file_close)
+		## View Menu
+		Shortcut.register(']', callback=on_view_zoom_in)
+		Shortcut.register('[', callback=on_view_zoom_out)
+		Shortcut.register('=', callback=on_view_zoom_reset)
+		Shortcut.register('G', callback=on_view_go_to)
 
-
-
-		Shortcut.register('W', callback=Callback(self._editor.del_tab))
+		## Tab Navegation
 		Shortcut.register('Arrow Right', ctrl=False,alt=True,callback=Callback(self._editor.next_tab))
 		Shortcut.register('Arrow Left', ctrl=False,alt=True,callback=Callback(self._editor.prev_tab))
 		Shortcut.register('Arrow Up', ctrl=False,alt=True,callback=Callback(self._editor.go_first_tab)) #first
 		Shortcut.register('Arrow Down', ctrl=False,alt=True,callback=Callback(self._editor.go_last_tab)) #last
-
 		for digit in range(1,11):
 			if digit==10:
 				digit =0
@@ -84,6 +140,7 @@ class Callback:
 			self._func(*self._w, **self._kw)
 		if self._bind is not None:
 			self._bind.call()
+
 
 	def bind(self, callback):
 		self._bind = callback
@@ -134,7 +191,7 @@ class Shortcut:
 			_callback = cls.__CALLBACKS[index]
 			if _callback is not None:
 				if key==_key and shift==_shift and ctrl==_ctrl and alt==_alt and meta==_meta:
-					_callback.call()
+					_callback.call(key,shift,ctrl,alt,meta)
 
 
 class Editor(flet.UserControl):
@@ -175,10 +232,12 @@ class Editor(flet.UserControl):
 		self._tabs.tabs.insert(index + 1, tab)
 		self._tabs.selected_index = index + 1 if index != count else index
 		self.update()
-	def _file_save_before_delete(self):
-		self.file_save()
-		self._del_tab()
+		tab._textfield.focus()
+
 	def del_tab(self):
+		self.file_save(after_save=self._del_tab)
+	
+	def _file_save_before_delete(self):
 		tab = self.active_tab()
 		if tab is None:
 			return None
@@ -225,6 +284,7 @@ class Editor(flet.UserControl):
 	def go_tab(self, index: int=0):
 		self._tabs.selected_index = index
 		self._tabs.update()
+		self.active_tab()._textfield.focus()
 	def go_first_tab(self):
 		self.go_tab(0)
 	def go_last_tab(self):
@@ -261,7 +321,11 @@ class Editor(flet.UserControl):
 		if tab is None:
 			return 
 		if tab._path == '':
-			self.file_save_as(after_save=after_save)
+			if tab._size>0:
+				self.file_save_as(after_save=after_save)
+			else:
+				if after_save is not None:
+					after_save()
 		else:
 			with open(tab._path,'w') as file:
 				file.write(tab.get_data())
@@ -287,10 +351,87 @@ class Editor(flet.UserControl):
 		self.page.update()
 		dialog.save_file()
 
-	
-
-	def will_unmount(self):
+	# edit menu
+	def edit_copy(self):
 		pass
+	def edit_cut(self):
+		pass
+	def edit_paste(self):
+		pass
+	def edit_find(self):
+		pass
+	def edit_replace(self):
+		pass
+
+	# view
+	def _view_zoom(self, var:int=0):
+		tab = self.active_tab()
+		if tab is None:
+			return
+		size = tab._textfield.text_size
+		if size is None or var == 0:
+			tab._textfield.text_size = 16
+		else:
+			tab._textfield.text_size += var
+
+		tab._textfield.update()
+
+	def view_zoom_in(self):
+		self._view_zoom(2)
+	def view_zoom_out(self):
+		self._view_zoom(-2)
+	def view_zoom_reset(self):
+		self._view_zoom()
+	def view_word_wrap(self):
+		pass
+
+	def view_line_number(self):
+		pass
+	def view_go_to(self):
+		tab = self.active_tab()
+		if tab is None:
+			return
+		def on_change(event):
+			go_button.disabled = len(textfield.value)<=0
+			go_button.update()
+		def on_submit(event):
+			_input=int(textfield.value)
+			if _input>=0 and _input<=len(tab._data):
+				# do scroll thing
+				pass
+			close()
+		def close():
+			dialog.open = False
+			self.page.update()
+		
+		only_filter = flet.InputFilter('^[0-9]*')
+		textfield = flet.TextField(on_submit=on_submit,keyboard_type=flet.KeyboardType.NUMBER,input_filter=only_filter,on_change=on_change)
+		view = flet.SafeArea(expand=True,content=textfield)
+
+		go_button = flet.IconButton(icon=flet.icons.FOLLOW_THE_SIGNS,on_click=on_submit,disabled=True)
+		dialog = flet.AlertDialog(modal=False,title=flet.Text(text_align=flet.TextAlign.CENTER,value='go to line'),
+			content=view,actions=[go_button],actions_alignment=flet.MainAxisAlignment.CENTER)
+		self.page.dialog = dialog
+		dialog.open = True
+		self.page.update()
+		textfield.focus()
+
+	# preference
+	def preference_setting(self):
+		pass
+	def preference_shortcut(self):
+		pass
+	def preference_theme(self):
+		pass
+	def preference_syntax_highlight(self):
+		pass
+	def preference_font(self):
+		pass
+	def preference_pluggin(self):
+		pass
+
+
+
 
 
 class Tab(flet.Tab):
@@ -350,7 +491,7 @@ class Menu(flet.SubmenuButton):
 	def add_button(self, text: str, icon, on_click: callable = None):
 		bt = flet.Ref[flet.MenuItemButton]()
 		self.buttons[text] = (bt, icon, on_click)
-		self.controls.append(flet.MenuItemButton(ref=bt, content=flet.Text(text), leading=flet.Icon(icon), on_click=on_click))
+		self.controls.append(flet.MenuItemButton(ref=bt, content=flet.Text(text), leading=flet.Icon(icon), on_click=on_click.call))
 		return bt
 
 	def del_button(self, name: str):
@@ -369,11 +510,11 @@ class MenuFile(Menu):
 		self._on_save_as = Callback()
 		self._on_close = Callback()
 
-		self.add_button('New', flet.icons.CREATE, self._on_new.call)
-		self.add_button('Open', flet.icons.FILE_OPEN, self._on_open.call)
-		self.add_button('Save', flet.icons.SAVE, self._on_save.call)
-		self.add_button('Save as', flet.icons.SAVE_AS, self._on_save_as.call)
-		self.add_button('Close', flet.icons.CLOSE, self._on_close.call)
+		self.add_button('New', flet.icons.CREATE, self._on_new)
+		self.add_button('Open', flet.icons.FILE_OPEN, self._on_open)
+		self.add_button('Save', flet.icons.SAVE, self._on_save)
+		self.add_button('Save as', flet.icons.SAVE_AS, self._on_save_as)
+		self.add_button('Close', flet.icons.CLOSE, self._on_close)
 
 
 class MenuEdit(Menu):
@@ -382,26 +523,17 @@ class MenuEdit(Menu):
 		super().__init__(text='Edit', icon=flet.icons.EDIT)
 		self.__ref = flet.Ref[flet.SubmenuButton]()
 		# edit
+		self._on_copy = Callback()
+		self._on_cut = Callback()
+		self._on_paste = Callback()
+		self._on_find = Callback()
+		self._on_replace = Callback()
+
 		self.add_button('Copy', flet.icons.COPY, self._on_copy)
 		self.add_button('Cut', flet.icons.CUT, self._on_cut)
 		self.add_button('Paste', flet.icons.PASTE, self._on_paste)
 		self.add_button('Find', flet.icons.FIND_IN_PAGE, self._on_find)
 		self.add_button('Replace', flet.icons.FIND_REPLACE, self._on_replace)
-
-	def _on_copy(self, *w, **kw):
-		pass
-
-	def _on_cut(self, *w, **kw):
-		pass
-
-	def _on_paste(self, *w, **kw):
-		pass
-
-	def _on_find(self, *w, **kw):
-		pass
-
-	def _on_replace(self, *w, **kw):
-		pass
 
 
 class MenuView(Menu):
@@ -410,26 +542,19 @@ class MenuView(Menu):
 		super().__init__(text='View', icon=flet.icons.PAGEVIEW)
 		self.__ref = flet.Ref[flet.SubmenuButton]()
 		# view
+		self._on_zoom_in = Callback()
+		self._on_zoom_out = Callback()
+		self._on_zoom_reset = Callback()		
+		self._on_word_wrap = Callback()
+		self._on_line_number = Callback()
+		self._on_go_to = Callback()
+
 		self.add_button('Zoom in', flet.icons.ZOOM_IN, self._on_zoom_in)
 		self.add_button('Zoom out', flet.icons.ZOOM_OUT, self._on_zoom_out)
+		self.add_button('Zoom reset', flet.icons.RESET_TV, self._on_zoom_reset)
 		self.add_button('Word wrap', flet.icons.WRAP_TEXT, self._on_word_wrap)
 		self.add_button('Line number', flet.icons.NUMBERS, self._on_line_number)
 		self.add_button('Go to', flet.icons.REMOVE_RED_EYE, self._on_go_to)
-
-	def _on_zoom_in(self, *w, **kw):
-		pass
-
-	def _on_zoom_out(self, *w, **kw):
-		pass
-
-	def _on_word_wrap(self, *w, **kw):
-		pass
-
-	def _on_line_number(self, *w, **kw):
-		pass
-
-	def _on_go_to(self, *w, **kw):
-		pass
 
 
 class MenuPreference(Menu):
@@ -438,6 +563,13 @@ class MenuPreference(Menu):
 		super().__init__(text='Preference', icon=flet.icons.ROOM_PREFERENCES)
 		self.__ref = flet.Ref[flet.SubmenuButton]()
 		# preferences
+		self._on_settings = Callback()
+		self._on_shortcuts = Callback()
+		self._on_themes = Callback()
+		self._on_syntax_hightlight = Callback()
+		self._on_fonts = Callback()
+		self._on_pluggins = Callback()
+
 		self.add_button('Settings', flet.icons.SETTINGS, self._on_settings)
 		self.add_button('Shortcuts', flet.icons.SHORTCUT, self._on_shortcuts)
 		self.add_button('Themes', flet.icons.COLOR_LENS, self._on_themes)
@@ -445,23 +577,6 @@ class MenuPreference(Menu):
 		self.add_button('Fonts', flet.icons.FONT_DOWNLOAD, self._on_fonts)
 		self.add_button('Pluggins', flet.icons.POWER, self._on_pluggins)
 
-	def _on_settings(self, *w, **kw):
-		pass
-	
-	def _on_shortcuts(self, *w, **kw):
-		pass
-	
-	def _on_themes(self, *w, **kw):
-		pass
-	
-	def _on_syntax_hightlight(self, *w, **kw):
-		pass
-	
-	def _on_fonts(self, *w, **kw):
-		pass
-	
-	def _on_pluggins(self, *w, **kw):
-		pass
 
 
 if __name__=='__main__':
