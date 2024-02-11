@@ -443,7 +443,7 @@ class Editor(flet.UserControl):
 			self.page.update()
 		
 		only_filter = flet.InputFilter('^[0-9]*')
-		textfield = flet.TextField(on_submit=on_submit,keyboard_type=flet.KeyboardType.NONE,input_filter=only_filter,on_change=on_change)
+		textfield = flet.TextField(on_submit=on_submit,keyboard_type=flet.KeyboardType.TEXT,input_filter=only_filter,on_change=on_change)
 		view = flet.SafeArea(expand=True,content=textfield)
 
 		go_button = flet.IconButton(icon=flet.icons.FOLLOW_THE_SIGNS,on_click=on_submit,disabled=True)
@@ -529,7 +529,7 @@ class AndroidFilePicker:
 
 	def __get_filename(self):
 		title = flet.Text(value='filename',text_align=flet.TextAlign.CENTER)
-		textfield = flet.TextField(ref=self._filename_textfield,keyboard_type=flet.KeyboardType.NONE,
+		textfield = flet.TextField(ref=self._filename_textfield,keyboard_type=flet.KeyboardType.TEXT,
 			on_change=self.__on_change_filename,on_submit=self.__on_submit_filename)
 		button = flet.IconButton(icon=flet.icons.SAVE,on_click=self.__on_submit_filename)
 		dialog = flet.AlertDialog(ref=self._filename_dialog,title=title,content=textfield,
@@ -612,7 +612,7 @@ class Tab(flet.Tab):
 		self._size = size if size>0 else len(data)
 		# flet
 		
-		self._textfield = flet.TextField(keyboard_type=flet.KeyboardType.NONE,multiline=True,min_lines=1000,expand=True,value=data, on_change=self._on_textfield_change)
+		self._textfield = flet.TextField(keyboard_type=flet.KeyboardType.TEXT,multiline=True,min_lines=1000,expand=True,value=data, on_change=self._on_textfield_change)
 		self._tab_content = flet.Tooltip(message=f'size: {size_fmt(self._size)}\npath: {path}\nchars: {self._size}', content=flet.Text(self._title))
 		self.tab_content=self._tab_content
 		self.content=self._textfield
